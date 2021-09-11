@@ -84,41 +84,41 @@ static const char** handle_emacs(int argc, char **argv) {
     return NULL;
   }
 
-  char **new_argv = malloc(3 * sizeof *new_argv);
+  char **exec_argv = malloc(3 * sizeof *exec_argv);
 
   // First argument contains the path to the emacsclient binary
-  duplicate_string(&new_argv[0], PATH_EMACSCLIENT);
+  duplicate_string(&exec_argv[0], PATH_EMACSCLIENT);
 
   // Second argument contains the path to the file to edit, which is likely wrapped by single
   // quotes and need to be removed.
-  new_argv[1] = malloc((strlen(argv[arg_file_idx]) + 1) * sizeof(char));
-  copy_without_quotes(new_argv[1], argv[arg_file_idx]);
+  exec_argv[1] = malloc((strlen(argv[arg_file_idx]) + 1) * sizeof(char));
+  copy_without_quotes(exec_argv[1], argv[arg_file_idx]);
 
-  new_argv[2] = NULL;
-  return (const char **) new_argv;
+  exec_argv[2] = NULL;
+  return (const char **) exec_argv;
 }
 
 static const char** handle_visual_code(int argc, char **argv) {
-  char **new_argv = malloc((argc + 3) * sizeof *new_argv);
+  char **exec_argv = malloc((argc + 3) * sizeof *exec_argv);
   int j = 0;
 
-  duplicate_string(&new_argv[j++], PATH_SH);
-  duplicate_string(&new_argv[j++], PATH_CODE);
+  duplicate_string(&exec_argv[j++], PATH_SH);
+  duplicate_string(&exec_argv[j++], PATH_CODE);
 
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], OPTION_FROM_UNITY) == 0) {
       continue;
     }
 
-    duplicate_string(&new_argv[j++], argv[i]);
+    duplicate_string(&exec_argv[j++], argv[i]);
   }
 
-  new_argv[j] = NULL;
-  return (const char **) new_argv;
+  exec_argv[j] = NULL;
+  return (const char **) exec_argv;
 }
 
 int main(int argc, char **argv) {
-  const char **new_argv = NULL;
+  const char **exec_argv = NULL;
 
   #ifdef DEBUG_ARGS
   FILE *f = fopen("/tmp/code.log", "w+");
@@ -130,22 +130,22 @@ int main(int argc, char **argv) {
 
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], OPTION_FROM_UNITY) == 0) {
-      new_argv = handle_emacs(argc, argv);
+      exec_argv = handle_emacs(argc, argv);
       break;
     }
   }
 
-  if (!new_argv) new_argv = handle_visual_code(argc, argv);
+  if (!exec_argv) exec_argv = handle_visual_code(argc, argv);
 
   #ifdef DEBUG_ARGS
-  for (int i = 0; new_argv[i] != NULL; ++i) {
-    fprintf(f, "%d: %s\n", i, new_argv[i]);
+  for (int i = 0; exec_argv[i] != NULL; ++i) {
+    fprintf(f, "%d: %s\n", i, exec_argv[i]);
   }
   fclose(f);
   exit(0);
   #endif
 
-  if (execv(new_argv[0], (char **)new_argv) == -1) {
+  if (execv(exec_argv[0], (char **)exec_argv) == -1) {
     perror("child process `execv` failed");
     return -1;
   }
