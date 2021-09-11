@@ -121,13 +121,13 @@ static const char** handle_visual_code(int argc, char **argv) {
 int main(int argc, char **argv) {
   const char **exec_argv = NULL;
 
-  #ifdef DEBUG_ARGS
+#ifdef DEBUG_ARGS
   FILE *f = fopen("/tmp/code.log", "w+");
   for (int i = 0; argv[i] != NULL; ++i) {
     fprintf(f, "%d: %s\n", i, argv[i]);
   }
   fprintf(f, "\n");
-  #endif
+#endif
 
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], OPTION_FROM_UNITY) == 0) {
@@ -138,13 +138,13 @@ int main(int argc, char **argv) {
 
   if (!exec_argv) exec_argv = handle_visual_code(argc, argv);
 
-  #ifdef DEBUG_ARGS
+#ifdef DEBUG_ARGS
   for (int i = 0; exec_argv[i] != NULL; ++i) {
     fprintf(f, "%d: %s\n", i, exec_argv[i]);
   }
   fclose(f);
   exit(0);
-  #endif
+#endif
 
   if (execv(exec_argv[0], (char **)exec_argv) == -1) {
     perror("child process `execv` failed");
