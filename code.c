@@ -12,6 +12,7 @@
 static const char* OPTION_FROM_UNITY = "--from-unity";
 static const char* OPTION_GOTO = "-g";
 static const char* PATH_EMACSCLIENT = "/usr/local/bin/emacsclient";
+static const char* EMACSCLIENT_ARGS[] = { "-n" };
 static const char* PATH_SH = "/bin/sh";
 static const char* PATH_CODE = "/usr/share/code/bin/code";
 
@@ -85,17 +86,24 @@ static const char** handle_emacs(int argc, char **argv) {
     return NULL;
   }
 
-  char **exec_argv = malloc(3 * sizeof *exec_argv);
+  const int static_args_len = (int)sizeof(EMACSCLIENT_ARGS) / (int)sizeof(EMACSCLIENT_ARGS[0]);
+  char **exec_argv = malloc((static_args_len + 3) * sizeof *exec_argv);
+  int j = 0;
 
   // First argument contains the path to the emacsclient binary
-  duplicate_string(&exec_argv[0], PATH_EMACSCLIENT);
+  duplicate_string(&exec_argv[j++], PATH_EMACSCLIENT);
 
-  // Second argument contains the path to the file to edit, which is likely wrapped by single
+  // Now adding all static arguments to feed to emacsclient
+  for (int i = 0; i < static_args_len; ++i) {
+    duplicate_string(&exec_argv[j++], EMACSCLIENT_ARGS[i]);
+  }
+
+  // Last argument contains the path to the file to edit, which is likely wrapped by single
   // quotes and need to be removed.
-  exec_argv[1] = malloc((strlen(argv[arg_file_idx]) + 1) * sizeof(char));
-  copy_without_quotes(exec_argv[1], argv[arg_file_idx]);
+  exec_argv[j] = malloc((strlen(argv[arg_file_idx]) + 1) * sizeof(char));
+  copy_without_quotes(exec_argv[j++], argv[arg_file_idx]);
 
-  exec_argv[2] = NULL;
+  exec_argv[j] = NULL;
   return (const char **) exec_argv;
 }
 
