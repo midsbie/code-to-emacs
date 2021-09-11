@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+// Define this for debugging of argument processing
 #undef DEBUG_ARGS
 
 static const char* OPTION_FROM_UNITY = "--from-unity";
