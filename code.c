@@ -1,25 +1,24 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include <stdarg.h>
-#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-
+#include <unistd.h>
 
 static const char* OPTION_FROM_UNITY = "--from-unity";
 static const char* OPTION_GOTO = "-g";
 static const char* PATH_EMACSCLIENT = "/usr/local/bin/emacsclient";
-static const char* EMACSCLIENT_ARGS[] = { "-n" };
+static const char* EMACSCLIENT_ARGS[] = {"-n"};
 static const char* PATH_SH = "/bin/sh";
 static const char* PATH_CODE = "/usr/share/code/bin/code";
 
-static void print_error(const char *format, ...) {
+static void print_error(const char* format, ...) {
   va_list args;
   va_start(args, format);
 
   const int len = strlen(format);
-  char *nl_fmt = malloc((len + 1) * sizeof(char));
+  char* nl_fmt = malloc((len + 1) * sizeof(char));
   strcpy(nl_fmt, format);
   nl_fmt[len] = '\n';
   nl_fmt[len + 1] = '\0';
@@ -28,15 +27,17 @@ static void print_error(const char *format, ...) {
   va_end(args);
 }
 
-static void duplicate_string(char **dest, const char *src) {
+static void duplicate_string(char** dest, const char* src) {
   size_t length = strlen(src) + 1;
   *dest = malloc(length);
   memcpy(*dest, src, length);
 }
 
-static void copy_without_quotes(char *dest, const char *src) {
+static void copy_without_quotes(char* dest, const char* src) {
   const int l = strlen(src);
-  if (l < 1) return;
+  if (l < 1) {
+    return;
+  }
 
   int n = src[l - 1] == '\'' ? l - 1 : l;
   if (*src == '\'') {
@@ -46,7 +47,7 @@ static void copy_without_quotes(char *dest, const char *src) {
   strncpy(dest, src, n);
 }
 
-static const char** handle_emacs(int argc, char **argv) {
+static const char** handle_emacs(int argc, char** argv) {
   const int opt_goto_len = strlen(OPTION_GOTO);
   int arg_file_idx = -1;
 
@@ -68,7 +69,7 @@ static const char** handle_emacs(int argc, char **argv) {
       return NULL;
     }
 
-    char *end = strchr(argv[i], ':');
+    char* end = strchr(argv[i], ':');
     if (end == NULL) {
       print_error("failed to extract file path from arguments");
       return NULL;
@@ -79,13 +80,13 @@ static const char** handle_emacs(int argc, char **argv) {
     arg_file_idx = i;
   }
 
-  if (arg_file_idx< 1) {
+  if (arg_file_idx < 1) {
     print_error("invalid arguments or location option not found");
     return NULL;
   }
 
   const int static_args_len = (int)sizeof(EMACSCLIENT_ARGS) / (int)sizeof(EMACSCLIENT_ARGS[0]);
-  char **exec_argv = malloc((static_args_len + 3) * sizeof *exec_argv);
+  char** exec_argv = malloc((static_args_len + 3) * sizeof *exec_argv);
   int j = 0;
 
   // First argument contains the path to the emacsclient binary
@@ -102,11 +103,11 @@ static const char** handle_emacs(int argc, char **argv) {
   copy_without_quotes(exec_argv[j++], argv[arg_file_idx]);
 
   exec_argv[j] = NULL;
-  return (const char **) exec_argv;
+  return (const char**)exec_argv;
 }
 
-static const char** handle_visual_code(int argc, char **argv) {
-  char **exec_argv = malloc((argc + 3) * sizeof *exec_argv);
+static const char** handle_visual_code(int argc, char** argv) {
+  char** exec_argv = malloc((argc + 3) * sizeof *exec_argv);
   int j = 0;
 
   duplicate_string(&exec_argv[j++], PATH_SH);
@@ -121,13 +122,22 @@ static const char** handle_visual_code(int argc, char **argv) {
   }
 
   exec_argv[j] = NULL;
-  return (const char **) exec_argv;
+  return (const char**)exec_argv;
 }
 
-int main(int argc, char **argv) {
-  const char **exec_argv = NULL;
-
+static void free_exec_argv(const char** exec_argv) {
+  if (exec_argv == NULL) {
+    return;
   }
+
+  for (int i = 0; exec_argv[i] != NULL; ++i) {
+    free((void*)exec_argv[i]);
+  }
+  free(exec_argv);
+}
+
+int main(int argc, char** argv) {
+  const char** exec_argv = NULL;
 
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], OPTION_FROM_UNITY) == 0) {
@@ -136,14 +146,15 @@ int main(int argc, char **argv) {
     }
   }
 
-  if (!exec_argv) exec_argv = handle_visual_code(argc, argv);
-
+  if (!exec_argv) {
+    exec_argv = handle_visual_code(argc, argv);
   }
 
-  if (execv(exec_argv[0], (char **)exec_argv) == -1) {
+  if (execv(exec_argv[0], (char**)exec_argv) == -1) {
     perror("child process `execv` failed");
     return -1;
   }
 
+  free_exec_argv(exec_argv);
   return 0;
 }
