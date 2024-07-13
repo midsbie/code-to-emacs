@@ -23,10 +23,14 @@ Unity environment.
 
         cd vscode-emacs-wrapper
         gcc code.c -o code
-        
-1. Back up current VSCode binary.
 
-1. Replace VSCode binary with the one built above.
+1. Install the binary:
+   1. Replace VSCode binary with the one built above.
+      - Remember to back up the current VSCode binary.
+
+   1. For an alternative cleaner solution, you can place the built `code` binary in a directory like
+      `~/bin` and add it to your `PATH` to take precedence over the system-installed VSCode's `code`
+      binary.
 
 ### Usage
 
