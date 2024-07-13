@@ -6,8 +6,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-// Define this for debugging of argument processing
-#undef DEBUG_ARGS
 
 static const char* OPTION_FROM_UNITY = "--from-unity";
 static const char* OPTION_GOTO = "-g";
@@ -129,13 +127,7 @@ static const char** handle_visual_code(int argc, char **argv) {
 int main(int argc, char **argv) {
   const char **exec_argv = NULL;
 
-#ifdef DEBUG_ARGS
-  FILE *f = fopen("/tmp/code.log", "w+");
-  for (int i = 0; argv[i] != NULL; ++i) {
-    fprintf(f, "%d: %s\n", i, argv[i]);
   }
-  fprintf(f, "\n");
-#endif
 
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], OPTION_FROM_UNITY) == 0) {
@@ -146,13 +138,7 @@ int main(int argc, char **argv) {
 
   if (!exec_argv) exec_argv = handle_visual_code(argc, argv);
 
-#ifdef DEBUG_ARGS
-  for (int i = 0; exec_argv[i] != NULL; ++i) {
-    fprintf(f, "%d: %s\n", i, exec_argv[i]);
   }
-  fclose(f);
-  exit(0);
-#endif
 
   if (execv(exec_argv[0], (char **)exec_argv) == -1) {
     perror("child process `execv` failed");
