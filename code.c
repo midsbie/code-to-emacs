@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,7 +7,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-static const char* OPTION_FROM_UNITY = "--from-unity";
 static const char* OPTION_GOTO = "-g";
 static const char* PATH_EMACSCLIENT = "/usr/local/bin/emacsclient";
 static const char* EMACSCLIENT_ARGS[] = {"-n"};
@@ -34,30 +34,38 @@ static void duplicate_string(char** dest, const char* src) {
 }
 
 static void copy_without_quotes(char* dest, const char* src) {
-  const int l = strlen(src);
-  if (l < 1) {
+  if (!src || !dest) {
     return;
   }
 
-  int n = src[l - 1] == '\'' ? l - 1 : l;
-  if (*src == '\'') {
-    --n;
-    ++src;
+  // Skip leading whitespace and quotes.
+  while (*src && (isspace((unsigned char)*src) || *src == '\'' || *src == '"')) {
+    src++;
   }
-  strncpy(dest, src, n);
+
+  // Find the end of the string, excluding trailing whitespace and quotes.
+  const char* end = src + strlen(src) - 1;
+  while (end > src && (isspace((unsigned char)*end) || *end == '\'' || *end == '"')) {
+    end--;
+  }
+
+  size_t length = end - src + 1;
+  strncpy(dest, src, length);
+  dest[length] = '\0';
 }
 
 static const char** handle_emacs(int argc, char** argv) {
   const int opt_goto_len = strlen(OPTION_GOTO);
   int arg_file_idx = -1;
 
-  // Unity invokes Visual Code in the following manner:
-  //   code 'PROJECT_ROOT_PATH' -g 'FILE_PATH':LINE_NUM
+  // Unity invokes Visual Code in the following form:
+  //   code PROJECT_ROOT_PATH -g FILE_PATH:LINE_NUM
   //
-  // Single quotes are added by Unity and are extracted here.
+  // Single quotes are added by Unity when paths contain special characters like whitespace, and
+  // must be extracted.
   //
-  // Looping through all arguments looking for the `-g` option.  When found the file path is
-  // extracted from the next argument.
+  // Starting by looping through all arguments looking for the `-g` option.  When found the file
+  // path is extracted from the next argument.
   for (int i = 1; i < argc; ++i) {
     if (strncmp(OPTION_GOTO, argv[i], opt_goto_len) != 0) {
       continue;
@@ -97,8 +105,7 @@ static const char** handle_emacs(int argc, char** argv) {
     duplicate_string(&exec_argv[j++], EMACSCLIENT_ARGS[i]);
   }
 
-  // Last argument contains the path to the file to edit, which is likely wrapped by single
-  // quotes and need to be removed.
+  // Last argument contains the path to the file to edit.
   exec_argv[j] = malloc((strlen(argv[arg_file_idx]) + 1) * sizeof(char));
   copy_without_quotes(exec_argv[j++], argv[arg_file_idx]);
 
@@ -106,52 +113,46 @@ static const char** handle_emacs(int argc, char** argv) {
   return (const char**)exec_argv;
 }
 
-static const char** handle_visual_code(int argc, char** argv) {
-  char** exec_argv = malloc((argc + 3) * sizeof *exec_argv);
-  int j = 0;
-
-  duplicate_string(&exec_argv[j++], PATH_SH);
-  duplicate_string(&exec_argv[j++], PATH_CODE);
-
-  for (int i = 1; i < argc; ++i) {
-    if (strcmp(argv[i], OPTION_FROM_UNITY) == 0) {
-      continue;
-    }
-
-    duplicate_string(&exec_argv[j++], argv[i]);
-  }
-
-  exec_argv[j] = NULL;
-  return (const char**)exec_argv;
-}
-
 static void free_exec_argv(const char** exec_argv) {
-  if (exec_argv == NULL) {
+  if (!exec_argv) {
     return;
   }
 
-  for (int i = 0; exec_argv[i] != NULL; ++i) {
+  for (int i = 0; exec_argv[i]; ++i) {
     free((void*)exec_argv[i]);
   }
   free(exec_argv);
 }
 
-int main(int argc, char** argv) {
-  const char** exec_argv = NULL;
+#ifdef DEBUG
+static void log_argv(int argc, char** argv) {
+  FILE* log_file = fopen("/tmp/code.log", "a");
 
-  for (int i = 1; i < argc; ++i) {
-    if (strcmp(argv[i], OPTION_FROM_UNITY) == 0) {
-      exec_argv = handle_emacs(argc, argv);
-      break;
-    }
+  if (log_file == NULL) {
+    perror("Failed to open log file");
+    return;
   }
 
+  fprintf(log_file, "Command-line arguments:\n");
+  for (int i = 0; i < argc; ++i) {
+    fprintf(log_file, "argv[%d]: %s\n", i, argv[i]);
+  }
+  fprintf(log_file, "\n");
+
+  fclose(log_file);
+}
+#endif
+
+int main(int argc, char** argv) {
+  const char** exec_argv = NULL;
+  exec_argv = handle_emacs(argc, argv);
   if (!exec_argv) {
-    exec_argv = handle_visual_code(argc, argv);
+    perror("unable to launch Emacs");
+    return -1;
   }
 
   if (execv(exec_argv[0], (char**)exec_argv) == -1) {
-    perror("child process `execv` failed");
+    perror("unable to spawn child process");
     return -1;
   }
 
