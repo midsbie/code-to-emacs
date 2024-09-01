@@ -54,9 +54,19 @@ static void copy_without_quotes(char* dest, const char* src) {
   dest[length] = '\0';
 }
 
+static char* make_emacs_line_arg(const char* line) {
+  const int len = strlen(line);
+  char* arg = malloc(len + 2);
+  if (len < 1) {
+    return NULL;
+  }
+
+  sprintf(arg, "+%s", line);
+  return arg;
+}
+
 static const char** handle_emacs(int argc, char** argv) {
   const int opt_goto_len = strlen(OPTION_GOTO);
-  int arg_file_idx = -1;
 
   // Unity invokes Visual Code in the following form:
   //   code PROJECT_ROOT_PATH -g FILE_PATH:LINE_NUM
@@ -66,39 +76,41 @@ static const char** handle_emacs(int argc, char** argv) {
   //
   // Starting by looping through all arguments looking for the `-g` option.  When found the file
   // path is extracted from the next argument.
-  for (int i = 1; i < argc; ++i) {
-    if (strncmp(OPTION_GOTO, argv[i], opt_goto_len) != 0) {
+  int i = 1;
+  while (i < argc) {
+    if (strncmp(OPTION_GOTO, argv[i++], opt_goto_len) != 0) {
       continue;
     }
 
-    ++i;
-    if (i >= argc) {
-      print_error("file path not specified after -g option");
-      return NULL;
-    }
-
-    char* end = strchr(argv[i], ':');
-    if (end == NULL) {
-      print_error("failed to extract file path from arguments");
-      return NULL;
-    }
-
-    // Simply fake-shortening the argument string since it won't be used again.
-    *end = '\0';
-    arg_file_idx = i;
+    break;
   }
 
-  if (arg_file_idx < 1) {
-    print_error("invalid arguments or location option not found");
+  if (i >= argc) {
+    print_error("file path not specified after -g option");
     return NULL;
   }
 
+  char* sep = strchr(argv[i], ':');
+  if (!sep) {
+    print_error("failed to extract file path from arguments");
+    return NULL;
+  }
+
+  // Simply fake-shortening the argument string since it won't be used again.
+  *sep = '\0';
+
   const int static_args_len = (int)sizeof(EMACSCLIENT_ARGS) / (int)sizeof(EMACSCLIENT_ARGS[0]);
-  char** exec_argv = malloc((static_args_len + 3) * sizeof *exec_argv);
+  char** exec_argv = malloc((static_args_len + 4) * sizeof *exec_argv);
   int j = 0;
 
   // First argument contains the path to the emacsclient binary
   duplicate_string(&exec_argv[j++], PATH_EMACSCLIENT);
+
+  // Second argument contains the line number in the form +LINE
+  char* line_arg = make_emacs_line_arg(sep + 1);
+  if (line_arg) {
+    exec_argv[j++] = line_arg;
+  }
 
   // Now adding all static arguments to feed to emacsclient
   for (int i = 0; i < static_args_len; ++i) {
@@ -106,8 +118,8 @@ static const char** handle_emacs(int argc, char** argv) {
   }
 
   // Last argument contains the path to the file to edit.
-  exec_argv[j] = malloc((strlen(argv[arg_file_idx]) + 1) * sizeof(char));
-  copy_without_quotes(exec_argv[j++], argv[arg_file_idx]);
+  exec_argv[j] = malloc((strlen(argv[i]) + 1) * sizeof(char));
+  copy_without_quotes(exec_argv[j++], argv[i]);
 
   exec_argv[j] = NULL;
   return (const char**)exec_argv;
@@ -147,7 +159,6 @@ int main(int argc, char** argv) {
   const char** exec_argv = NULL;
   exec_argv = handle_emacs(argc, argv);
   if (!exec_argv) {
-    perror("unable to launch Emacs");
     return -1;
   }
 
