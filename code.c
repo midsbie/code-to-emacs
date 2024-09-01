@@ -25,13 +25,13 @@ static void print_error(const char* format, ...) {
   va_end(args);
 }
 
-static void duplicate_string(char** dest, const char* src) {
+static void copy_string(char** dest, const char* src) {
   size_t length = strlen(src) + 1;
   *dest = malloc(length);
   memcpy(*dest, src, length);
 }
 
-static void copy_without_quotes(char* dest, const char* src) {
+static void copy_and_trim_quotes(char* dest, const char* src) {
   if (!src || !dest) {
     return;
   }
@@ -52,7 +52,7 @@ static void copy_without_quotes(char* dest, const char* src) {
   dest[length] = '\0';
 }
 
-static char* make_emacs_line_arg(const char* line) {
+static char* format_emacs_line_arg(const char* line) {
   const int len = strlen(line);
   char* arg = malloc(len + 2);
   if (len < 1) {
@@ -63,7 +63,7 @@ static char* make_emacs_line_arg(const char* line) {
   return arg;
 }
 
-static const char** handle_emacs(int argc, char** argv) {
+static const char** build_emacs_args(int argc, char** argv) {
   const int opt_goto_len = strlen(OPTION_GOTO);
 
   // Unity invokes Visual Code in the following form:
@@ -102,22 +102,22 @@ static const char** handle_emacs(int argc, char** argv) {
   int j = 0;
 
   // First argument contains the path to the emacsclient binary
-  duplicate_string(&exec_argv[j++], PATH_EMACSCLIENT);
+  copy_string(&exec_argv[j++], PATH_EMACSCLIENT);
 
   // Second argument contains the line number in the form +LINE
-  char* line_arg = make_emacs_line_arg(sep + 1);
+  char* line_arg = format_emacs_line_arg(sep + 1);
   if (line_arg) {
     exec_argv[j++] = line_arg;
   }
 
   // Now adding all static arguments to feed to emacsclient
   for (int i = 0; i < static_args_len; ++i) {
-    duplicate_string(&exec_argv[j++], EMACSCLIENT_ARGS[i]);
+    copy_string(&exec_argv[j++], EMACSCLIENT_ARGS[i]);
   }
 
   // Last argument contains the path to the file to edit.
   exec_argv[j] = malloc((strlen(argv[i]) + 1) * sizeof(char));
-  copy_without_quotes(exec_argv[j++], argv[i]);
+  copy_and_trim_quotes(exec_argv[j++], argv[i]);
 
   exec_argv[j] = NULL;
   return (const char**)exec_argv;
@@ -155,7 +155,7 @@ static void log_argv(int argc, char** argv) {
 
 int main(int argc, char** argv) {
   const char** exec_argv = NULL;
-  exec_argv = handle_emacs(argc, argv);
+  exec_argv = build_emacs_args(argc, argv);
   if (!exec_argv) {
     return EXIT_FAILURE;
   }
