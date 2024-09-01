@@ -2,5 +2,5 @@ code: code.o
 
 code.o: code.c
 
-%o:
+%.o:
 	gcc -O3 $< -o $>
