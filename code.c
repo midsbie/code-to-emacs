@@ -159,12 +159,12 @@ int main(int argc, char** argv) {
   const char** exec_argv = NULL;
   exec_argv = handle_emacs(argc, argv);
   if (!exec_argv) {
-    return -1;
+    return EXIT_FAILURE;
   }
 
   if (execv(exec_argv[0], (char**)exec_argv) == -1) {
     perror("unable to spawn child process");
-    return -1;
+    return EXIT_FAILURE;
   }
 
   free_exec_argv(exec_argv);
