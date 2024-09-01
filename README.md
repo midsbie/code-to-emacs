@@ -1,7 +1,7 @@
-# VSCode Wrapper For Emacs
+# CodeToEmacs
 
-The VSCode Wrapper for Emacs is a tool designed to bridge the gap between the Unity Editor and
-Emacs, letting you edit your C# scripts in your favorite editor.
+CodeToEmacs is a tool designed to bridge the gap between the Unity Editor and Emacs, letting
+you edit your C# scripts in your favorite editor.
 
 ## Problem Statement
 
@@ -12,10 +12,10 @@ these project files, leading to issues with LSP support for C# scripts.
 
 ## Solution
 
-The VSCode Wrapper for Emacs replaces the `code` binary on your Ubuntu system with a small program
-that opens C# scripts in Emacs. This allows Unity to think it's interacting with Visual Studio Code,
-thereby continuing to generate the necessary `csproj` files while seamlessly integrating Emacs into
-your workflow.
+CodeToEmacs replaces the `code` binary on your Ubuntu system with a small program that opens C#
+scripts in Emacs. This allows Unity to think it's interacting with Visual Studio Code, thereby
+continuing to generate the necessary `csproj` files while seamlessly integrating Emacs into your
+workflow.
 
 ## Getting Started
 
@@ -23,7 +23,7 @@ your workflow.
 
 1. Clone the repository:
 
-        git clone git@github.com:midsbie/vscode-emacs-wrapper.git
+        git clone git@github.com:midsbie/code-to-emacs.git
 
 1. Configure the paths:
 
@@ -39,7 +39,7 @@ your workflow.
 
 1. Build the project:
 
-        cd vscode-emacs-wrapper
+        cd code-to-emacs
         make
 
 1. Install the binary:
@@ -47,7 +47,7 @@ your workflow.
    1. Replace VSCode binary with the one built above. On a typical Ubuntu system, this would involve
       the steps:
       - `sudo mv /usr/share/code/code /usr/share/code/code.ORIG`
-      - `sudo cp /path/to/vscode-emacs-wrapper/code /usr/share/code/`
+      - `sudo cp /path/to/code-to-emacs/code /usr/share/code/`
 
 ### Usage
 
