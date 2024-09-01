@@ -10,8 +10,6 @@
 static const char* OPTION_GOTO = "-g";
 static const char* PATH_EMACSCLIENT = "/usr/local/bin/emacsclient";
 static const char* EMACSCLIENT_ARGS[] = {"-n"};
-static const char* PATH_SH = "/bin/sh";
-static const char* PATH_CODE = "/usr/share/code/bin/code";
 
 static void print_error(const char* format, ...) {
   va_list args;
