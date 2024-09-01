@@ -11,20 +11,6 @@ static const char* OPTION_GOTO = "-g";
 static const char* PATH_EMACSCLIENT = "/usr/local/bin/emacsclient";
 static const char* EMACSCLIENT_ARGS[] = {"-n"};
 
-static void print_error(const char* format, ...) {
-  va_list args;
-  va_start(args, format);
-
-  const int len = strlen(format);
-  char* nl_fmt = malloc((len + 1) * sizeof(char));
-  strcpy(nl_fmt, format);
-  nl_fmt[len] = '\n';
-  nl_fmt[len + 1] = '\0';
-  vfprintf(stderr, nl_fmt, args);
-  free(nl_fmt);
-  va_end(args);
-}
-
 static void copy_string(char** dest, const char* src) {
   size_t length = strlen(src) + 1;
   *dest = malloc(length);
@@ -84,13 +70,13 @@ static const char** build_emacs_args(int argc, char** argv) {
   }
 
   if (i >= argc) {
-    print_error("file path not specified after -g option");
+    fprintf(stderr, "file path not specified after -g option\n");
     return NULL;
   }
 
   char* sep = strchr(argv[i], ':');
   if (!sep) {
-    print_error("failed to extract file path from arguments");
+    fprintf(stderr, "failed to extract file path from arguments\n");
     return NULL;
   }
 
