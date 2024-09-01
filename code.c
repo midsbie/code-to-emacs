@@ -162,11 +162,12 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
+  int ret_code = 0;
   if (execv(exec_argv[0], (char**)exec_argv) == -1) {
     perror("unable to spawn child process");
-    return EXIT_FAILURE;
+    ret_code = EXIT_FAILURE;
   }
 
   free_exec_argv(exec_argv);
-  return 0;
+  return ret_code;
 }
