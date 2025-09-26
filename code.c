@@ -140,6 +140,10 @@ static void log_argv(int argc, char** argv) {
 #endif
 
 int main(int argc, char** argv) {
+#ifdef DEBUG
+  log_argv(argc, argv);
+#endif
+
   const char** exec_argv = NULL;
   exec_argv = build_emacs_args(argc, argv);
   if (!exec_argv) {
